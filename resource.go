@@ -19,6 +19,7 @@ import (
 // Config resource config struct
 type Config struct {
 	Name       string
+	IconName   string
 	Menu       []string
 	Permission *roles.Permission
 	Themes     []ThemeInterface
@@ -35,13 +36,13 @@ type Resource struct {
 	ParentResource *Resource
 	SearchHandler  func(keyword string, context *qor.Context) *gorm.DB
 
-	params   string
-	admin    *Admin
-	metas    []*Meta
-	actions  []*Action
-	scopes   []*Scope
-	filters  []*Filter
-	mounted  bool
+	params  string
+	admin   *Admin
+	metas   []*Meta
+	actions []*Action
+	scopes  []*Scope
+	filters []*Filter
+	mounted bool
 	sections struct {
 		IndexSections                  []*Section
 		OverriddingIndexAttrs          bool
@@ -730,12 +731,14 @@ func (res *Resource) configure() {
 
 	configureModel = func(value interface{}) {
 		modelType := utils.ModelType(value)
-		for i := 0; i < modelType.NumField(); i++ {
-			if fieldStruct := modelType.Field(i); fieldStruct.Anonymous {
-				if injector, ok := reflect.New(fieldStruct.Type).Interface().(resource.ConfigureResourceInterface); ok {
-					injector.ConfigureQorResource(res)
-				} else {
-					configureModel(reflect.New(fieldStruct.Type).Interface())
+		if modelType.Kind() == reflect.Struct {
+			for i := 0; i < modelType.NumField(); i++ {
+				if fieldStruct := modelType.Field(i); fieldStruct.Anonymous {
+					if injector, ok := reflect.New(fieldStruct.Type).Interface().(resource.ConfigureResourceInterface); ok {
+						injector.ConfigureQorResource(res)
+					} else {
+						configureModel(reflect.New(fieldStruct.Type).Interface())
+					}
 				}
 			}
 		}
